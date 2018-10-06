@@ -2,6 +2,7 @@ import os
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
 try:
     from pytesseract import pytesseract as pyocr
+    pyocr.tesseract_cmd = 'C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe'
 except ImportError:
     print('Please install pytesseract first, which depends on the following libs:')
     print('http://www.lfd.uci.edu/~gohlke/pythonlibs/#pil')
@@ -25,9 +26,12 @@ class OCR(object):
         self.th_bw = 235
         self.rect = [256, 918, 1653, 1043] # [916, 256, 1035, 1654]
         self.dilate_then_mask = [4, 2, 50, 4]  # imdilate times;xor image 1, 2; threshold of a letter; number of pixel to retain as a letter
-        self.re_pos1 = re.compile('(?<=\()[1-9]\d*.\d*|0\.\d*[1-9]\d*')
-        self.re_pos2 = re.compile('([1-9]\d*.\d*|0\.\d*[1-9]\d*)(?=,\n)')
-        self.re_dist = re.compile('(?<=D\s)([1-9]\d*.\d*|0\.\d*[1-9]\d*)(?=m)')
+        # self.re_pos1 = re.compile('(?<=\()[1-9]\d*.\d*|0\.\d*[1-9]\d*')
+        # self.re_pos2 = re.compile('([1-9]\d*.\d*|0\.\d*[1-9]\d*)(?=,\n)')
+        # self.re_dist = re.compile('(?<=D)([1-9]\d*.\d*|0\.\d*[1-9]\d*)(?=m)')
+        self.re_pos1 = re.compile('\(\s*([1-9]\d*.\d*|0\.\d*[1-9]\d*),')
+        self.re_pos2 = re.compile('([1-9]\d*.\d*|0\.\d*[1-9]\d*)\s*,\n')
+        self.re_dist = re.compile('D\s*([1-9]\d*.\d*|0\.\d*[1-9]\d*)\s*m')
 
     def ocr(self, im_path):
         im = Image.open(im_path)  # open colour image
@@ -81,6 +85,12 @@ class OCR(object):
         dist = self.re_dist.findall(text)
         if not all([pos1, pos2, dist]):
             return [[], [], []]
+        if not re.findall(r'\.', dist[0]):
+            dist[0] = str(float(dist[0])/100)
+        if not re.findall(r'\.', pos1[0]):
+            pos1[0] = str(float(pos1[0])/10000)
+        if not re.findall(r'\.', pos2[0]):
+            pos2[0] = str(float(pos2[0])/10000)
         return [pos1[0], pos2[0], dist[0]]
 
 
